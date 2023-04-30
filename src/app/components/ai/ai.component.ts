@@ -15,7 +15,7 @@ export class AiComponent {
   
   @ViewChild('gameCanvas', { static: true }) gameCanvas!: ElementRef<HTMLCanvasElement>;
   private ctx!: CanvasRenderingContext2D;
-  private gridSize: { m: number; n: number } = { m: 8, n: 10 };
+  private gridSize: { m: number; n: number } = { m: 5, n: 5 };
   private cellSize: number = 50;
   private selectedPoints: Point[] = [];
   private triangles: Point[][] = [];
@@ -186,7 +186,7 @@ checkGameOver(): boolean {
   return true;
 }
 aiMove(): Point[] {
-  if (this.triangles.length < 6) {
+  if (this.triangles.length < 4) {
     return this.largestAreaLegalTriangleMove();
   }
   let depth = 1; // Start with a depth of 1
