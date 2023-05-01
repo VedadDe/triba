@@ -1,10 +1,10 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
+import { TriangleHelper } from 'src/app/helpers/triangle-operations';
 
 interface Point {
   x: number;
   y: number;
 }
-
 
 @Component({
   selector: 'app-ai',
@@ -21,9 +21,8 @@ export class AiComponent {
   private triangles: Point[][] = [];
   private currentPlayer: number = 1;
   gameOver: boolean = false;
-  private transpositionTable: Map<string, { score: number; depth: number; triangle: Point[] }> = new Map();
   minMaxAfter: number = 2;
-
+  
   constructor() { }
   ngOnInit() {
     const context = this.gameCanvas.nativeElement.getContext('2d');
@@ -49,9 +48,6 @@ export class AiComponent {
     this.gameCanvas.nativeElement.height = this.gridSize.n * this.cellSize + 2 * pointRadius;
     this.drawGrid(pointRadius); // Pass the pointRadius value to the drawGrid method
   }
-  
-  
-  
 
   drawGrid(pointRadius: number) {
     for (let i = 0; i <= this.gridSize.m; i++) {
@@ -68,7 +64,6 @@ export class AiComponent {
     this.ctx.fill();
   }
   
-
   onCanvasClick(event: MouseEvent) {
     if (this.gameOver || this.currentPlayer === 2) {
       return;
@@ -78,14 +73,14 @@ export class AiComponent {
     const x = Math.floor((event.clientX - rect.left) / this.cellSize);
     const y = Math.floor((event.clientY - rect.top) / this.cellSize);
   
-    if (this.isSelected({ x, y }) || this.isVertexOfExistingTriangle({ x, y })) {
+    if (TriangleHelper.isSelected({ x, y }, this.selectedPoints) || TriangleHelper.isVertexOfExistingTriangle({ x, y }, this.triangles)) {
       return;
     }
   
     this.selectedPoints.push({ x, y });
     this.drawPoint(pointRadius + x * this.cellSize, pointRadius + y * this.cellSize, pointRadius);
     if (this.selectedPoints.length === 3) {
-      if (this.isValidTriangle(this.selectedPoints)) {
+      if (TriangleHelper.isValidTriangle(this.selectedPoints, this.triangles)) {
         this.triangles.push(this.selectedPoints);
         this.drawTriangle(this.selectedPoints);
         this.selectedPoints = [];
@@ -101,49 +96,6 @@ export class AiComponent {
       }
     }
   }
-  
-
-  isSelected(point: Point): boolean {
-    return this.selectedPoints.some(p => p.x === point.x && p.y === point.y);
-  }
-  isVertexOfExistingTriangle(point: Point): boolean {
-    return this.triangles.some(triangle => triangle.some(p => p.x === point.x && p.y === point.y));
-  }
-
-  isValidTriangle(points: Point[]): boolean {
-    const [p1, p2, p3] = points;
-    // Check if points are collinear
-    if ((p2.y - p1.y) * (p3.x - p1.x) === (p3.y - p1.y) * (p2.x - p1.x)) {
-      return false;
-    }
-
-    // Check if the new triangle intersects any existing triangle
-    return !this.triangles.some(triangle => this.trianglesIntersect(triangle, points));
-  }
-
-  trianglesIntersect(triangle1: Point[], triangle2: Point[]): boolean {
-    // Check if any edge of triangle1 intersects any edge of triangle2
-    for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 3; j++) {
-        if (this.linesIntersect(
-          triangle1[i], triangle1[(i + 1) % 3],
-          triangle2[j], triangle2[(j + 1) % 3]
-        )) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  linesIntersect(p1: Point, p2: Point, p3: Point, p4: Point): boolean {
-    const ua = ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) /
-              ((p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y));
-    const ub = ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) /
-              ((p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y));
-
-    return (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1);
-  }
 
   drawTriangle(points: Point[]) {
     const pointRadius = 12;
@@ -157,7 +109,7 @@ export class AiComponent {
     this.ctx.stroke();
   
     this.switchPlayer();
-    if (this.checkGameOver()) {
+    if (TriangleHelper.checkGameOver(this.gridSize, this.triangles)) {
       this.showGameOverMessage();
     }
   }
@@ -170,59 +122,39 @@ export class AiComponent {
     alert(`Game over! Player ${this.currentPlayer === 1 ? 2 : 1} wins.`);
   
 }
-
-checkGameOver(): boolean {
-  for (let x1 = 0; x1 < this.gridSize.m + 1; x1++) {
-    for (let y1 = 0; y1 < this.gridSize.n + 1; y1++) {
-      for (let x2 = 0; x2 < this.gridSize.m + 1; x2++) {
-        for (let y2 = 0; y2 < this.gridSize.n + 1; y2++) {
-          for (let x3 = 0; x3 < this.gridSize.m + 1; x3++) {
-            for (let y3 = 0; y3 < this.gridSize.n + 1; y3++) {
-              const point1: Point = { x: x1, y: y1 };
-              const point2: Point = { x: x2, y: y2 };
-              const point3: Point = { x: x3, y: y3 };
-
-              const triangle = [point1, point2, point3];
-
-              if (this.isValidTriangle(triangle) && !this.isVertexOfExistingTriangle(point1) &&
-                  !this.isVertexOfExistingTriangle(point2) && !this.isVertexOfExistingTriangle(point3)) {
-                return false;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  this.gameOver = true;
-  return true;
-}
 aiMove(): Point[] {
   if (this.triangles.length < this.minMaxAfter) {
     return this.largestAreaLegalTriangleMove();
   }
-  let depth = 1; // Start with a depth of 1
-  let bestTriangle: Point[] = [];
-  let startTime = Date.now();
-  let timeLimit = 1000; // Set a time limit in milliseconds
 
-  // Iterative deepening loop
-  while (Date.now() - startTime < timeLimit) {
-    this.transpositionTable.clear(); // Clear the transposition table for each depth
-    const { triangle } = this.minimax(depth, true, -Infinity, Infinity);
-    bestTriangle = triangle;
-    depth++;
-    console.log("depth", depth)
-  }
+  let depth = this.calculateAdaptiveDepth();
+  console.log(depth)
+  let bestTriangle: Point[] = [];
+
+  const { triangle } = this.alphaBetaPruning(depth, true, -Infinity, Infinity);
+  bestTriangle = triangle;
 
   return bestTriangle;
 }
 
+calculateAdaptiveDepth(): number {
+  /*const totalPoints = (this.gridSize.m + 1) * (this.gridSize.n + 1);
+  const usedPoints = this.triangles.reduce((acc, triangle) => acc + triangle.length, 0);
+  const unusedPoints = totalPoints - usedPoints;
+*/
+  if (this.triangles.length >= 14) {
+    return 4;
+  } else if (this.triangles.length >= 12) {
+    return 3;
+  } else if (this.triangles.length > 8) {
+    return 2;
+  } else {
+    return 1;
+  }
+}
 
-
-
-minimax(depth: number, isMaximizingPlayer: boolean, alpha: number, beta: number): { score: number; triangle: Point[] } {
-  if (depth === 0 || this.checkGameOver()) {
+alphaBetaPruning(depth: number, isMaximizingPlayer: boolean, alpha: number, beta: number): { score: number; triangle: Point[] } {
+  if (depth === 0 || TriangleHelper.checkGameOver(this.gridSize, this.triangles)) {
     const score = this.evaluateGameState(isMaximizingPlayer);
     return { score, triangle: [] };
   }
@@ -230,21 +162,11 @@ minimax(depth: number, isMaximizingPlayer: boolean, alpha: number, beta: number)
   let bestTriangle: Point[] = [];
   let bestScore = isMaximizingPlayer ? -Infinity : Infinity;
 
-  const stateKey = this.generateStateKey();
-
-  // Check if the state has been evaluated before
-  if (this.transpositionTable.has(stateKey)) {
-    const cached = this.transpositionTable.get(stateKey);
-    if (cached && cached.depth >= depth) {
-      return { score: cached.score, triangle: cached.triangle };
-    }
-  }
-
   const allPossibleTriangles = this.getAllPossibleTriangles();
 
   for (const triangle of allPossibleTriangles) {
     this.triangles.push(triangle);
-    const { score } = this.minimax(depth - 1, !isMaximizingPlayer, alpha, beta);
+    const { score } = this.alphaBetaPruning(depth - 1, !isMaximizingPlayer, alpha, beta);
     this.triangles.pop();
 
     if (isMaximizingPlayer) {
@@ -263,16 +185,10 @@ minimax(depth: number, isMaximizingPlayer: boolean, alpha: number, beta: number)
     if (beta <= alpha) break;
   }
 
-  // Store the evaluated state in the transposition table
-  this.transpositionTable.set(stateKey, { score: bestScore, depth, triangle: bestTriangle });
-
   return { score: bestScore, triangle: bestTriangle };
 }
 
-
 evaluateGameState(isMaximizingPlayer: boolean): number {
-  // A more sophisticated evaluation function
-  // This example rewards having more triangles and penalizes having fewer potential moves
   const aiTriangles = this.triangles.filter((_, index) => index % 2 === 1).length;
   const humanTriangles = this.triangles.filter((_, index) => index % 2 === 0).length;
 
@@ -292,7 +208,7 @@ getOpponentRemainingTriangles(isMaximizingPlayer: boolean): number {
   for (let x = 0; x < this.gridSize.m + 1; x++) {
     for (let y = 0; y < this.gridSize.n + 1; y++) {
       const point: Point = { x, y };
-      if (!this.isVertexOfExistingTriangle(point)) {
+      if (!TriangleHelper.isVertexOfExistingTriangle(point, this.triangles)) {
         unusedPoints.push(point);
       }
     }
@@ -304,8 +220,7 @@ getOpponentRemainingTriangles(isMaximizingPlayer: boolean): number {
     for (let j = i + 1; j < unusedPoints.length; j++) {
       for (let k = j + 1; k < unusedPoints.length; k++) {
         const triangle = [unusedPoints[i], unusedPoints[j], unusedPoints[k]];
-
-        if (this.isValidTriangle(triangle)) {
+        if (TriangleHelper.isValidTriangle(triangle, this.triangles)) {
           let currentPlayerTriangle = (count % 2 === 0) === isMaximizingPlayer;
           if (!currentPlayerTriangle) {
             count++;
@@ -318,12 +233,6 @@ getOpponentRemainingTriangles(isMaximizingPlayer: boolean): number {
   return count;
 }
 
-generateStateKey(): string {
-  const sortedTriangles = this.triangles.map(triangle =>
-    triangle.map(p => `${p.x},${p.y}`).sort().join('-')
-  ).sort();
-  return sortedTriangles.join('|');
-}
 getAllPossibleTriangles(): Point[][] {
   const allPossibleTriangles: Point[][] = [];
 
@@ -331,7 +240,7 @@ getAllPossibleTriangles(): Point[][] {
   for (let x = 0; x < this.gridSize.m + 1; x++) {
     for (let y = 0; y < this.gridSize.n + 1; y++) {
       const point: Point = { x, y };
-      if (!this.isVertexOfExistingTriangle(point)) {
+      if (!TriangleHelper.isVertexOfExistingTriangle(point, this.triangles)) {
         unusedPoints.push(point);
       }
     }
@@ -342,7 +251,7 @@ getAllPossibleTriangles(): Point[][] {
       for (let k = j + 1; k < unusedPoints.length; k++) {
         const triangle = [unusedPoints[i], unusedPoints[j], unusedPoints[k]];
 
-        if (this.isValidTriangle(triangle)) {
+        if (TriangleHelper.isValidTriangle(triangle, this.triangles)) {
           allPossibleTriangles.push(triangle);
         }
       }
@@ -360,7 +269,7 @@ largestAreaLegalTriangleMove(): Point[] {
     }
   }
 
-  let maxArea = -1;
+  let maxArea = -Infinity;
   let bestTriangle: Point[] = [];
 
   for (let i = 0; i < allPoints.length; i++) {
@@ -368,8 +277,8 @@ largestAreaLegalTriangleMove(): Point[] {
       for (let k = j + 1; k < allPoints.length; k++) {
         const triangle = [allPoints[i], allPoints[j], allPoints[k]];
 
-        if (this.isValidTriangle(triangle) &&
-            !triangle.some(p => this.isVertexOfExistingTriangle(p))) {
+        if (TriangleHelper.isValidTriangle(triangle, this.triangles) &&
+            !triangle.some(p => TriangleHelper.isVertexOfExistingTriangle(p, this.triangles))) {
           const area = this.calculateTriangleArea(triangle);
           if (area > maxArea) {
             maxArea = area;
@@ -388,5 +297,4 @@ calculateTriangleArea(triangle: Point[]): number {
   const area = Math.abs((p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y)) / 2);
   return area;
 }
-
 }
