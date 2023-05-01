@@ -5,12 +5,16 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { AiComponent } from './components/ai/ai.component';
 import { HeaderComponent } from './header/header.component';
+import { TwoPlayersComponent } from './components/two-players/two-players.component';
+import { AboutComponent } from './components/about/about.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     AiComponent,
     HeaderComponent,
+    TwoPlayersComponent,
+    AboutComponent,
 
   ],
   imports: [

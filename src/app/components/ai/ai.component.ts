@@ -15,13 +15,14 @@ export class AiComponent {
   
   @ViewChild('gameCanvas', { static: true }) gameCanvas!: ElementRef<HTMLCanvasElement>;
   private ctx!: CanvasRenderingContext2D;
-  private gridSize: { m: number; n: number } = { m: 5, n: 5 };
+  private gridSize: { m: number; n: number } = { m: 6, n: 4 };
   private cellSize: number = 50;
   private selectedPoints: Point[] = [];
   private triangles: Point[][] = [];
   private currentPlayer: number = 1;
   gameOver: boolean = false;
   private transpositionTable: Map<string, { score: number; depth: number; triangle: Point[] }> = new Map();
+  minMaxAfter: number = 2;
 
   constructor() { }
   ngOnInit() {
@@ -38,6 +39,17 @@ export class AiComponent {
     this.gameCanvas.nativeElement.height = this.gridSize.n * this.cellSize + 2 * pointRadius;
     this.drawGrid(pointRadius); // Pass pointRadius to drawGrid method
   }
+  changeGridSize(m: number, n: number, minMaxStart: number): void {
+    // Update the grid size and redraw the canvas
+    this.gridSize.m = m;
+    this.gridSize.n = n;
+    this.minMaxAfter = minMaxStart;
+    const pointRadius = 12;
+    this.gameCanvas.nativeElement.width = this.gridSize.m * this.cellSize + 2 * pointRadius;
+    this.gameCanvas.nativeElement.height = this.gridSize.n * this.cellSize + 2 * pointRadius;
+    this.drawGrid(pointRadius); // Pass the pointRadius value to the drawGrid method
+  }
+  
   
   
 
@@ -186,7 +198,7 @@ checkGameOver(): boolean {
   return true;
 }
 aiMove(): Point[] {
-  if (this.triangles.length < 4) {
+  if (this.triangles.length < this.minMaxAfter) {
     return this.largestAreaLegalTriangleMove();
   }
   let depth = 1; // Start with a depth of 1
@@ -263,12 +275,49 @@ evaluateGameState(isMaximizingPlayer: boolean): number {
   // This example rewards having more triangles and penalizes having fewer potential moves
   const aiTriangles = this.triangles.filter((_, index) => index % 2 === 1).length;
   const humanTriangles = this.triangles.filter((_, index) => index % 2 === 0).length;
+
+  const currentTriangles = isMaximizingPlayer ? aiTriangles : humanTriangles;
+  const opponentTriangles = isMaximizingPlayer ? humanTriangles : aiTriangles;
+
   const remainingTriangles = this.getAllPossibleTriangles().length;
+  const opponentRemainingTriangles = this.getOpponentRemainingTriangles(isMaximizingPlayer);
 
-  const score = (aiTriangles - humanTriangles) * 10 - remainingTriangles;
+  const score = (currentTriangles - opponentTriangles) * 10 - remainingTriangles - opponentRemainingTriangles * 5;
 
-  return isMaximizingPlayer ? score : -score;
+  return score;
 }
+
+getOpponentRemainingTriangles(isMaximizingPlayer: boolean): number {
+  const unusedPoints: Point[] = [];
+  for (let x = 0; x < this.gridSize.m + 1; x++) {
+    for (let y = 0; y < this.gridSize.n + 1; y++) {
+      const point: Point = { x, y };
+      if (!this.isVertexOfExistingTriangle(point)) {
+        unusedPoints.push(point);
+      }
+    }
+  }
+
+  let count = 0;
+
+  for (let i = 0; i < unusedPoints.length; i++) {
+    for (let j = i + 1; j < unusedPoints.length; j++) {
+      for (let k = j + 1; k < unusedPoints.length; k++) {
+        const triangle = [unusedPoints[i], unusedPoints[j], unusedPoints[k]];
+
+        if (this.isValidTriangle(triangle)) {
+          let currentPlayerTriangle = (count % 2 === 0) === isMaximizingPlayer;
+          if (!currentPlayerTriangle) {
+            count++;
+          }
+        }
+      }
+    }
+  }
+
+  return count;
+}
+
 generateStateKey(): string {
   const sortedTriangles = this.triangles.map(triangle =>
     triangle.map(p => `${p.x},${p.y}`).sort().join('-')
