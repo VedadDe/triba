@@ -138,6 +138,8 @@ chooseDepth(): number {
 }
 
 alphaBetaPruning(depth: number, isMaximizingPlayer: boolean, alpha: number, beta: number): { score: number; triangle: Point[] } {
+  //reference: https://www.javatpoint.com/ai-alpha-beta-pruning
+  //https://www.freecodecamp.org/news/simple-chess-ai-step-by-step-1d55a9266977/
   if (depth === 0 || TriangleHelper.checkGameOver(this.gridSize, this.triangles)) {
     const score = this.evaluateGameState();
     return { score, triangle: [] };
@@ -173,20 +175,18 @@ alphaBetaPruning(depth: number, isMaximizingPlayer: boolean, alpha: number, beta
 }
 
 evaluateGameState(): number {
+  //reference: https://stackoverflow.com/questions/1291377/how-to-create-a-good-evaluation-function-for-a-game
+  //https://stackoverflow.com/questions/3002167/minimax-algorithm-cost-evaluation-function
   const aiTriangles = this.triangles.filter((_, index) => index % 2 === 1).length;
   const humanTriangles = this.triangles.filter((_, index) => index % 2 === 0).length;
 
-  const remainingTriangles = this.getAllPossibleTriangles().length;
   const opponentRemainingTriangles = Math.floor(this.getAllPossibleTriangles().length / 2);
 
-  const potentialAiMoves = this.getAllPossibleTriangles()
-    .filter((triangle) => TriangleHelper.isValidTriangle(triangle, this.triangles))
-    .length;
+  const potentialAiMoves = this.getAllPossibleTriangles().length;
 
   const score = (aiTriangles - humanTriangles) * 20
-                - remainingTriangles * 2
                 - opponentRemainingTriangles * 8
-                + potentialAiMoves * 10;
+                + potentialAiMoves * 8;
 
   return score;
 }
