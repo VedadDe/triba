@@ -46,7 +46,7 @@ export class AiComponent {
     const pointRadius = 12;
     this.gameCanvas.nativeElement.width = this.gridSize.m * this.cellSize + 2 * pointRadius;
     this.gameCanvas.nativeElement.height = this.gridSize.n * this.cellSize + 2 * pointRadius;
-    this.drawGrid(pointRadius); // Pass the pointRadius value to the drawGrid method
+    this.drawGrid(pointRadius); 
   }
 
   drawGrid(pointRadius: number) {

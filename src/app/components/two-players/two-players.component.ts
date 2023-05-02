@@ -25,7 +25,7 @@ export class TwoPlayersComponent {
   constructor() {}
   ngOnInit() {
     const context = this.gameCanvas.nativeElement.getContext('2d');
-    const pointRadius = 12; // Set the point radius here for easier adjustments
+    const pointRadius = 12; 
 
     if (!context) {
       console.error('Failed to get the canvas rendering context.');
@@ -37,7 +37,7 @@ export class TwoPlayersComponent {
       this.gridSize.m * this.cellSize + 2 * pointRadius;
     this.gameCanvas.nativeElement.height =
       this.gridSize.n * this.cellSize + 2 * pointRadius;
-    this.drawGrid(pointRadius); // Pass pointRadius to drawGrid method
+    this.drawGrid(pointRadius); 
   }
 
   drawGrid(pointRadius: number) {
