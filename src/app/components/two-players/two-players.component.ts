@@ -17,9 +17,9 @@ export class TwoPlayersComponent {
   private ctx!: CanvasRenderingContext2D;
   private gridSize: { m: number; n: number } = { m: 8, n: 10 };
   private cellSize: number = 50;
-  private selectedPoints: Point[] = [];
+  private triangle: Point[] = [];
   private triangles: Point[][] = [];
-  private currentPlayer: number = 1;
+  currentPlayer: number = 1;
   gameOver: boolean = false;
 
   constructor() {}
@@ -66,25 +66,25 @@ export class TwoPlayersComponent {
     const y = Math.floor((event.clientY - rect.top) / this.cellSize);
 
     if (
-      TriangleHelper.isSelected({ x, y }, this.selectedPoints) ||
+      TriangleHelper.isSelected({ x, y }, this.triangle) ||
       TriangleHelper.isVertexOfExistingTriangle({ x, y }, this.triangles)
     ) {
       return;
     }
 
-    this.selectedPoints.push({ x, y });
+    this.triangle.push({ x, y });
     this.drawPoint(
       pointRadius + x * this.cellSize,
       pointRadius + y * this.cellSize,
       pointRadius
     );
 
-    if (this.selectedPoints.length === 3) {
-      if (TriangleHelper.isValidTriangle(this.selectedPoints, this.triangles)) {
-        this.triangles.push(this.selectedPoints);
-        this.drawTriangle(this.selectedPoints);
+    if (this.triangle.length === 3) {
+      if (TriangleHelper.isValidTriangle(this.triangle, this.triangles)) {
+        this.triangles.push(this.triangle);
+        this.drawTriangle(this.triangle);
       }
-      this.selectedPoints = [];
+      this.triangle = [];
     }
   }
 
@@ -117,12 +117,10 @@ export class TwoPlayersComponent {
   switchPlayer() {
     this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
   }
-  showGameOverMessage(): void {
-    alert(`Game over! Player ${this.currentPlayer === 1 ? 2 : 1} wins.`);
-  }
+
 
   changeGridSize(m: number, n: number): void {
-    // Update the grid size and redraw the canvas
+
     this.gridSize.m = m;
     this.gridSize.n = n;
     const pointRadius = 12;
@@ -130,6 +128,12 @@ export class TwoPlayersComponent {
       this.gridSize.m * this.cellSize + 2 * pointRadius;
     this.gameCanvas.nativeElement.height =
       this.gridSize.n * this.cellSize + 2 * pointRadius;
-    this.drawGrid(pointRadius); // Pass the pointRadius value to the drawGrid method
+    this.drawGrid(pointRadius); 
   }
+  restartGame(){
+    window.location.reload();
+  }
+  showGameOverMessage(): void {
+    this.gameOver=true
+}
 }

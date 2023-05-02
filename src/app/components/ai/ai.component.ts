@@ -26,7 +26,7 @@ export class AiComponent {
   constructor() { }
   ngOnInit() {
     const context = this.gameCanvas.nativeElement.getContext('2d');
-    const pointRadius = 12; // Set the point radius here for easier adjustments
+    const pointRadius = 12; 
   
     if (!context) {
       console.error('Failed to get the canvas rendering context.');
@@ -36,10 +36,10 @@ export class AiComponent {
     this.ctx = context;
     this.gameCanvas.nativeElement.width = this.gridSize.m * this.cellSize + 2 * pointRadius;
     this.gameCanvas.nativeElement.height = this.gridSize.n * this.cellSize + 2 * pointRadius;
-    this.drawGrid(pointRadius); // Pass pointRadius to drawGrid method
+    this.drawGrid(pointRadius); 
   }
   changeGridSize(m: number, n: number, minMaxStart: number): void {
-    // Update the grid size and redraw the canvas
+
     this.gridSize.m = m;
     this.gridSize.n = n;
     this.minMaxAfter = minMaxStart;
@@ -68,7 +68,7 @@ export class AiComponent {
     if (this.gameOver || this.currentPlayer === 2) {
       return;
     }
-      const pointRadius = 12;
+    const pointRadius = 12;
     const rect = this.gameCanvas.nativeElement.getBoundingClientRect();
     const x = Math.floor((event.clientX - rect.left) / this.cellSize);
     const y = Math.floor((event.clientY - rect.top) / this.cellSize);
@@ -85,7 +85,6 @@ export class AiComponent {
         this.drawTriangle(this.selectedPoints);
         this.selectedPoints = [];
   
-        // Handle AI move
         if (!this.gameOver && this.currentPlayer === 2) {
           const aiTriangle = this.aiMove();
           this.triangles.push(aiTriangle);
@@ -114,21 +113,12 @@ export class AiComponent {
     }
   }
   
-
-  switchPlayer() {
-    this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
-  }
-  showGameOverMessage(): void {
-    this.gameOver=true
-   // alert(`Game over! Player ${this.currentPlayer === 1 ? 2 : 1} wins.`);
-  
-}
 aiMove(): Point[] {
   if (this.triangles.length < this.minMaxAfter) {
     return this.largestAreaLegalTriangleMove();
   }
 
-  let depth = this.calculateAdaptiveDepth();
+  let depth = this.chooseDepth();
   console.log(depth)
   let bestTriangle: Point[] = [];
 
@@ -138,27 +128,18 @@ aiMove(): Point[] {
   return bestTriangle;
 }
 
-calculateAdaptiveDepth(): number {
-  /*const totalPoints = (this.gridSize.m + 1) * (this.gridSize.n + 1);
-  const usedPoints = this.triangles.reduce((acc, triangle) => acc + triangle.length, 0);
-  const unusedPoints = totalPoints - usedPoints;
-*/
-if(this.gridSize.m == 6)
-  return 3;
-  if (this.triangles.length >= 14) {
-    return 4;
-  } else if (this.triangles.length >= 12) {
-    return 3;
-  } else if (this.triangles.length > 8) {
-    return 2;
-  } else {
-    return 1;
-  }
+chooseDepth(): number {
+  return this.gridSize.m == 6 ? 4 :
+  this.gridSize.n == 6 ? 2 :
+  this.triangles.length >= 14 ? 4 :
+  this.triangles.length >= 12 ? 3 :
+  this.triangles.length > 8 ? 2 :
+  1;
 }
 
 alphaBetaPruning(depth: number, isMaximizingPlayer: boolean, alpha: number, beta: number): { score: number; triangle: Point[] } {
   if (depth === 0 || TriangleHelper.checkGameOver(this.gridSize, this.triangles)) {
-    const score = this.evaluateGameState(isMaximizingPlayer);
+    const score = this.evaluateGameState();
     return { score, triangle: [] };
   }
 
@@ -191,58 +172,23 @@ alphaBetaPruning(depth: number, isMaximizingPlayer: boolean, alpha: number, beta
   return { score: bestScore, triangle: bestTriangle };
 }
 
-evaluateGameState(isMaximizingPlayer: boolean): number {
+evaluateGameState(): number {
   const aiTriangles = this.triangles.filter((_, index) => index % 2 === 1).length;
   const humanTriangles = this.triangles.filter((_, index) => index % 2 === 0).length;
 
-  const currentTriangles = isMaximizingPlayer ? aiTriangles : humanTriangles;
-  const opponentTriangles = isMaximizingPlayer ? humanTriangles : aiTriangles;
-
   const remainingTriangles = this.getAllPossibleTriangles().length;
-  const opponentRemainingTriangles = this.getOpponentRemainingTriangles(isMaximizingPlayer);
+  const opponentRemainingTriangles = Math.floor(this.getAllPossibleTriangles().length / 2);
 
-  // Calculate the potential AI moves
   const potentialAiMoves = this.getAllPossibleTriangles()
     .filter((triangle) => TriangleHelper.isValidTriangle(triangle, this.triangles))
     .length;
 
-  const score = (currentTriangles - opponentTriangles) * 20
+  const score = (aiTriangles - humanTriangles) * 20
                 - remainingTriangles * 2
                 - opponentRemainingTriangles * 8
                 + potentialAiMoves * 10;
 
   return score;
-}
-
-
-getOpponentRemainingTriangles(isMaximizingPlayer: boolean): number {
-  const unusedPoints: Point[] = [];
-  for (let x = 0; x < this.gridSize.m + 1; x++) {
-    for (let y = 0; y < this.gridSize.n + 1; y++) {
-      const point: Point = { x, y };
-      if (!TriangleHelper.isVertexOfExistingTriangle(point, this.triangles)) {
-        unusedPoints.push(point);
-      }
-    }
-  }
-
-  let count = 0;
-
-  for (let i = 0; i < unusedPoints.length; i++) {
-    for (let j = i + 1; j < unusedPoints.length; j++) {
-      for (let k = j + 1; k < unusedPoints.length; k++) {
-        const triangle = [unusedPoints[i], unusedPoints[j], unusedPoints[k]];
-        if (TriangleHelper.isValidTriangle(triangle, this.triangles)) {
-          let currentPlayerTriangle = (count % 2 === 0) === isMaximizingPlayer;
-          if (!currentPlayerTriangle) {
-            count++;
-          }
-        }
-      }
-    }
-  }
-
-  return count;
 }
 
 getAllPossibleTriangles(): Point[][] {
@@ -275,8 +221,8 @@ getAllPossibleTriangles(): Point[][] {
 
 largestAreaLegalTriangleMove(): Point[] {
   const allPoints: Point[] = [];
-  for (let x = 0; x < this.gridSize.m + 1; x++) {
-    for (let y = 0; y < this.gridSize.n + 1; y++) {
+  for (let x = 0; x <= this.gridSize.m ; x++) {
+    for (let y = 0; y <= this.gridSize.n; y++) {
       allPoints.push({ x, y });
     }
   }
@@ -308,5 +254,14 @@ calculateTriangleArea(triangle: Point[]): number {
   const [p1, p2, p3] = triangle;
   const area = Math.abs((p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y)) / 2);
   return area;
+}
+restartGame(){
+  window.location.reload();
+}
+switchPlayer() {
+  this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+}
+showGameOverMessage(): void {
+  this.gameOver=true  
 }
 }

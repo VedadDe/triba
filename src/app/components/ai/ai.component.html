@@ -2,9 +2,10 @@
     <button (click)="changeGridSize(6, 4, 2)">6x4</button>
     <button (click)="changeGridSize(8, 6, 4)">8x6</button>
     <button (click)="changeGridSize(8, 10, 8)">8x10</button>
+    <button (click)="restartGame()">{{gameOver ? "Igraj ponovo" : "Restart"}}</button>
   </div>
   
-  <h4 *ngIf="gameOver" style="text-align: center;">Pobjednik je igrač {{ currentPlayer}}</h4>
+  <h1 *ngIf="gameOver" style="text-align: center; color: red">Pobjednik je igrač {{ currentPlayer % 3}}</h1>
   <div class="container">
     <canvas #gameCanvas (click)="onCanvasClick($event)"></canvas>
   </div>
