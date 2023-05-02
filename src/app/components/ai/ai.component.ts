@@ -19,7 +19,7 @@ export class AiComponent {
   private cellSize: number = 50;
   private selectedPoints: Point[] = [];
   private triangles: Point[][] = [];
-  private currentPlayer: number = 1;
+  currentPlayer: number = 1;
   gameOver: boolean = false;
   minMaxAfter: number = 2;
   
@@ -119,7 +119,8 @@ export class AiComponent {
     this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
   }
   showGameOverMessage(): void {
-    alert(`Game over! Player ${this.currentPlayer === 1 ? 2 : 1} wins.`);
+    this.gameOver=true
+   // alert(`Game over! Player ${this.currentPlayer === 1 ? 2 : 1} wins.`);
   
 }
 aiMove(): Point[] {
@@ -142,6 +143,8 @@ calculateAdaptiveDepth(): number {
   const usedPoints = this.triangles.reduce((acc, triangle) => acc + triangle.length, 0);
   const unusedPoints = totalPoints - usedPoints;
 */
+if(this.gridSize.m == 6)
+  return 3;
   if (this.triangles.length >= 14) {
     return 4;
   } else if (this.triangles.length >= 12) {
@@ -198,10 +201,19 @@ evaluateGameState(isMaximizingPlayer: boolean): number {
   const remainingTriangles = this.getAllPossibleTriangles().length;
   const opponentRemainingTriangles = this.getOpponentRemainingTriangles(isMaximizingPlayer);
 
-  const score = (currentTriangles - opponentTriangles) * 10 - remainingTriangles - opponentRemainingTriangles * 5;
+  // Calculate the potential AI moves
+  const potentialAiMoves = this.getAllPossibleTriangles()
+    .filter((triangle) => TriangleHelper.isValidTriangle(triangle, this.triangles))
+    .length;
+
+  const score = (currentTriangles - opponentTriangles) * 20
+                - remainingTriangles * 2
+                - opponentRemainingTriangles * 8
+                + potentialAiMoves * 10;
 
   return score;
 }
+
 
 getOpponentRemainingTriangles(isMaximizingPlayer: boolean): number {
   const unusedPoints: Point[] = [];

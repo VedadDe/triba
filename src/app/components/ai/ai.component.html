@@ -1,9 +1,12 @@
 <div class="grid-size-buttons">
     <button (click)="changeGridSize(6, 4, 2)">6x4</button>
     <button (click)="changeGridSize(8, 6, 4)">8x6</button>
-    <button (click)="changeGridSize(8, 10, 6)">8x10</button>
+    <button (click)="changeGridSize(8, 10, 8)">8x10</button>
   </div>
+  
+  <h4 *ngIf="gameOver" style="text-align: center;">Pobjednik je igrač {{ currentPlayer}}</h4>
   <div class="container">
     <canvas #gameCanvas (click)="onCanvasClick($event)"></canvas>
   </div>
+
   
