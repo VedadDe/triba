@@ -62,32 +62,38 @@ export class TriangleHelper {
     gridSize: { m: number; n: number },
     triangles: Point[][]
   ): boolean {
-    for (let x1 = 0; x1 < gridSize.m + 1; x1++) {
-      for (let y1 = 0; y1 < gridSize.n + 1; y1++) {
-        for (let x2 = 0; x2 < gridSize.m + 1; x2++) {
-          for (let y2 = 0; y2 < gridSize.n + 1; y2++) {
-            for (let x3 = 0; x3 < gridSize.m + 1; x3++) {
-              for (let y3 = 0; y3 < gridSize.n + 1; y3++) {
-                const point1: Point = { x: x1, y: y1 };
-                const point2: Point = { x: x2, y: y2 };
-                const point3: Point = { x: x3, y: y3 };
-
-                const triangle = [point1, point2, point3];
-
-                if (
-                  this.isValidTriangle(triangle, triangles) &&
-                  !this.isVertexOfExistingTriangle(point1, triangles) &&
-                  !this.isVertexOfExistingTriangle(point2, triangles) &&
-                  !this.isVertexOfExistingTriangle(point3, triangles)
-                ) {
-                  return false;
-                }
-              }
-            }
+    const totalPoints = (gridSize.m + 1) * (gridSize.n + 1);
+  
+    for (let i = 0; i < totalPoints; i++) {
+      const x1 = i % (gridSize.m + 1);
+      const y1 = Math.floor(i / (gridSize.m + 1));
+  
+      for (let j = i + 1; j < totalPoints; j++) {
+        const x2 = j % (gridSize.m + 1);
+        const y2 = Math.floor(j / (gridSize.m + 1));
+  
+        for (let k = j + 1; k < totalPoints; k++) {
+          const x3 = k % (gridSize.m + 1);
+          const y3 = Math.floor(k / (gridSize.m + 1));
+  
+          const point1: Point = { x: x1, y: y1 };
+          const point2: Point = { x: x2, y: y2 };
+          const point3: Point = { x: x3, y: y3 };
+  
+          const triangle = [point1, point2, point3];
+  
+          if (
+            this.isValidTriangle(triangle, triangles) &&
+            !this.isVertexOfExistingTriangle(point1, triangles) &&
+            !this.isVertexOfExistingTriangle(point2, triangles) &&
+            !this.isVertexOfExistingTriangle(point3, triangles)
+          ) {
+            return false;
           }
         }
       }
     }
     return true;
   }
+  
 }
